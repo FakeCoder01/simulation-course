@@ -1,0 +1,86 @@
+# root docker-compose.yml — runs ALL labs through a single gateway
+# access:
+#   http://localhost:3000/labN/         labN frontend
+#   http://localhost:3000/labN/api/     labN backend API
+#
+# only port 3000 is exposed to the host. everything else is internal.
+
+services:
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - gateway-net
+    depends_on:
+      lab1-backend:
+        condition: service_healthy
+      lab1-frontend:
+        condition: service_started
+
+  lab1-backend:
+    build: ./lab01/backend
+    container_name: lab1-backend
+    restart: unless-stopped
+    networks:
+      gateway-net: # reachable by gateway as "lab1-backend"
+        aliases: []
+      lab1-net:
+        aliases:
+          - backend # reachable by lab1-frontend nginx as "backend"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
+      interval: 8s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  lab1-frontend:
+    build: ./lab01/frontend
+    container_name: lab1-frontend
+    restart: unless-stopped
+    networks:
+      - gateway-net # reachable by gateway as "lab1-frontend"
+      - lab1-net # can reach lab1-backend via "backend" alias
+    depends_on:
+      lab1-backend:
+        condition: service_healthy
+
+  # lab 2 template
+  # lab2-backend:
+  #   build: ./lab02/backend
+  #   container_name: lab2-backend
+  #   restart: unless-stopped
+  #   networks:
+  #     gateway-net:
+  #       aliases: []
+  #     lab2-net:
+  #       aliases:
+  #         - backend
+  #   healthcheck:
+  #     test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
+  #     interval: 8s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 5s
+
+  # lab2-frontend:
+  #   build: ./lab02/frontend
+  #   container_name: lab2-frontend
+  #   restart: unless-stopped
+  #   networks:
+  #     - gateway-net
+  #     - lab2-net
+  #   depends_on:
+  #     lab2-backend:
+  #       condition: service_healthy
+
+networks:
+  gateway-net:
+    name: gateway-net # gateway + all lab frontends + all lab backends
+  lab1-net:
+    name: lab1-net # lab1 internal (backend alias = "backend")
+  # lab2-net:
+  #   name: lab2-net

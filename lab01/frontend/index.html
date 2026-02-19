@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Sim Lab 1 — Flight Simulator</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <div class="app">
+            <aside class="sidebar">
+                <div class="brand">
+                    <div class="brand-name">Lab<em>01</em></div>
+                    <div class="brand-tag">Имитационное моделирование ТГУ</div>
+                </div>
+
+                <div class="sb-scroll">
+                    <div class="sb-sec">
+                        <div class="sb-label">Parameters</div>
+
+                        <div class="param">
+                            <div class="param-hdr">
+                                <span class="param-name">Initial Velocity</span>
+                                <span class="param-unit">m / s</span>
+                            </div>
+                            <div class="param-ctrl">
+                                <input
+                                    type="range"
+                                    id="rv0"
+                                    min="10"
+                                    max="500"
+                                    value="100"
+                                    step="1"
+                                />
+                                <input
+                                    type="number"
+                                    class="nbox"
+                                    id="nv0"
+                                    min="10"
+                                    max="500"
+                                    value="100"
+                                    step="1"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="param">
+                            <div class="param-hdr">
+                                <span class="param-name">Launch Angle</span>
+                                <span class="param-unit">degrees</span>
+                            </div>
+                            <div class="param-ctrl">
+                                <input
+                                    type="range"
+                                    id="rang"
+                                    min="1"
+                                    max="89"
+                                    value="45"
+                                    step="1"
+                                />
+                                <input
+                                    type="number"
+                                    class="nbox"
+                                    id="nang"
+                                    min="1"
+                                    max="89"
+                                    value="45"
+                                    step="1"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="param">
+                            <div class="param-hdr">
+                                <span class="param-name">Mass</span>
+                                <span class="param-unit">kg</span>
+                            </div>
+                            <div class="param-ctrl">
+                                <input
+                                    type="range"
+                                    id="rmas"
+                                    min="0.1"
+                                    max="20"
+                                    value="1"
+                                    step="0.1"
+                                />
+                                <input
+                                    type="number"
+                                    class="nbox"
+                                    id="nmas"
+                                    min="0.1"
+                                    max="20"
+                                    value="1"
+                                    step="0.1"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="param">
+                            <div class="param-hdr">
+                                <span class="param-name"
+                                    >Drag Coefficient Cᴅ</span
+                                >
+                            </div>
+                            <div class="param-ctrl">
+                                <input
+                                    type="range"
+                                    id="rcd"
+                                    min="0.01"
+                                    max="2"
+                                    value="0.47"
+                                    step="0.01"
+                                />
+                                <input
+                                    type="number"
+                                    class="nbox"
+                                    id="ncd"
+                                    min="0.01"
+                                    max="2"
+                                    value="0.47"
+                                    step="0.01"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="param">
+                            <div class="param-hdr">
+                                <span class="param-name"
+                                    >Cross-Section Area</span
+                                >
+                                <span class="param-unit">m²</span>
+                            </div>
+                            <div class="param-ctrl">
+                                <input
+                                    type="range"
+                                    id="rare"
+                                    min="0.001"
+                                    max="0.5"
+                                    value="0.01"
+                                    step="0.001"
+                                />
+                                <input
+                                    type="number"
+                                    class="nbox"
+                                    id="nare"
+                                    min="0.001"
+                                    max="0.5"
+                                    value="0.01"
+                                    step="0.001"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sb-sec">
+                        <div class="sb-label">Time Step (dt)</div>
+                        <div class="step-pills">
+                            <button
+                                class="sp"
+                                data-v="1"
+                                onclick="pickStep(this)"
+                            >
+                                1 s
+                            </button>
+                            <button
+                                class="sp active"
+                                data-v="0.1"
+                                onclick="pickStep(this)"
+                            >
+                                0.1 s
+                            </button>
+                            <button
+                                class="sp"
+                                data-v="0.01"
+                                onclick="pickStep(this)"
+                            >
+                                0.01 s
+                            </button>
+                            <button
+                                class="sp"
+                                data-v="0.001"
+                                onclick="pickStep(this)"
+                            >
+                                0.001 s
+                            </button>
+                            <button
+                                class="sp"
+                                data-v="0.0001"
+                                onclick="pickStep(this)"
+                            >
+                                0.0001 s
+                            </button>
+                        </div>
+                        <div class="cust-row">
+                            <span class="cust-label">Custom:</span>
+                            <input
+                                class="cust-in"
+                                id="custDt"
+                                type="number"
+                                placeholder="e.g. 0.005"
+                                min="0.00001"
+                                max="10"
+                                step="any"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="btn-wrap">
+                        <button
+                            class="btn btn-primary"
+                            id="btnRun"
+                            onclick="runOne()"
+                        >
+                            Run Simulation
+                        </button>
+                        <button
+                            class="btn btn-outline"
+                            id="btnAll"
+                            onclick="runAll()"
+                        >
+                            Run All 5 Steps
+                        </button>
+                        <button class="btn btn-ghost" onclick="clearAll()">
+                            Clear All
+                        </button>
+                    </div>
+
+                    <div class="rap" id="rapWrap">
+                        <div class="rap-top">
+                            <span class="rap-lbl" id="rapLbl">Running…</span>
+                            <span class="rap-count" id="rapCnt"></span>
+                        </div>
+                        <div class="rap-track" id="rapTrack"></div>
+                    </div>
+
+                    <div class="sb-sec">
+                        <div class="sb-label" style="margin-top: 16px">
+                            Trajectories
+                        </div>
+                        <div class="traj-list" id="trajList">
+                            <div class="traj-empty">
+                                No trajectories yet. Hit Run to begin.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <div class="main">
+                <div class="chart-zone">
+                    <div class="chart-top">
+                        <div class="chart-heading">
+                            Trajectory Plot
+                            <span>altitude vs. range</span>
+                        </div>
+                        <div class="legend" id="legend"></div>
+                    </div>
+                    <div class="chart-box">
+                        <canvas id="cv"></canvas>
+                        <div class="pbar" id="pbar"></div>
+                        <div class="tip" id="tip"></div>
+                    </div>
+                </div>
+
+                <div class="table-zone">
+                    <div class="table-hdr">
+                        <div class="table-heading">Numerical Convergence</div>
+                        <div class="table-sub">
+                            Same launch parameters, different step sizes
+                        </div>
+                    </div>
+                    <table class="res">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th id="th-1">dt = 1 s</th>
+                                <th id="th-0.1">dt = 0.1 s</th>
+                                <th id="th-0.01">dt = 0.01 s</th>
+                                <th id="th-0.001">dt = 0.001 s</th>
+                                <th id="th-0.0001">dt = 0.0001 s</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Flight Range (m)</td>
+                                <td id="r-1">—</td>
+                                <td id="r-0.1">—</td>
+                                <td id="r-0.01">—</td>
+                                <td id="r-0.001">—</td>
+                                <td id="r-0.0001">—</td>
+                            </tr>
+                            <tr>
+                                <td>Max Altitude (m)</td>
+                                <td id="a-1">—</td>
+                                <td id="a-0.1">—</td>
+                                <td id="a-0.01">—</td>
+                                <td id="a-0.001">—</td>
+                                <td id="a-0.0001">—</td>
+                            </tr>
+                            <tr>
+                                <td>Terminal Speed (m/s)</td>
+                                <td id="t-1">—</td>
+                                <td id="t-0.1">—</td>
+                                <td id="t-0.01">—</td>
+                                <td id="t-0.001">—</td>
+                                <td id="t-0.0001">—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="toasts"></div>
+
+        <script src="script.js"></script>
+    </body>
+</html>

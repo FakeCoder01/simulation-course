@@ -1,0 +1,41 @@
+# lab01/docker-compose.yml — run lab1 in isolation (no gateway needed)
+#
+# run: (from lab1/ directory):
+#   docker compose up --build
+#
+# access:
+#   http://localhost:3001/           : SPA root
+#   http://localhost:3001/lab1/      : same SPA (both paths work)
+#   http://localhost:3001/lab1/api/  : API (nginx proxies to backend)
+
+services:
+  backend:
+    build: ./backend
+    container_name: lab1-backend
+    restart: unless-stopped
+    networks:
+      lab1-net:
+        aliases:
+          - backend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
+      interval: 8s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  frontend:
+    build: ./frontend
+    container_name: lab1-frontend
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    networks:
+      - lab1-net
+    depends_on:
+      backend:
+        condition: service_healthy
+
+networks:
+  lab1-net:
+    name: lab1-net-standalone
