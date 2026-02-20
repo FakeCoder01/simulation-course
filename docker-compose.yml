@@ -8,6 +8,7 @@
 services:
   gateway:
     build: ./gateway
+    image: lemmedie/sim-course:gateway
     container_name: gateway
     restart: unless-stopped
     ports:
@@ -22,6 +23,7 @@ services:
 
   lab1-backend:
     build: ./lab01/backend
+    image: lemmedie/sim-course:lab1-frontend
     container_name: lab1-backend
     restart: unless-stopped
     networks:
@@ -39,6 +41,7 @@ services:
 
   lab1-frontend:
     build: ./lab01/frontend
+    image: lemmedie/sim-course:lab1-backend
     container_name: lab1-frontend
     restart: unless-stopped
     networks:
@@ -51,6 +54,7 @@ services:
   # lab 2 template
   # lab2-backend:
   #   build: ./lab02/backend
+  #   image: lemmedie/sim-course:lab1-backend
   #   container_name: lab2-backend
   #   restart: unless-stopped
   #   networks:
@@ -68,6 +72,7 @@ services:
 
   # lab2-frontend:
   #   build: ./lab02/frontend
+  #   image: lemmedie/sim-course:lab1-backend
   #   container_name: lab2-frontend
   #   restart: unless-stopped
   #   networks:

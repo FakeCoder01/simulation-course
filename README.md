@@ -33,4 +33,4 @@ To use this repository, follow these steps:
 
 #### Labs:
 
-1. **Lab 1: Моделирование полёта тела в атмосфере ( [Code](lab01) | [Live](https://sim.ipmkn.ru/lab1/))**
+1. **Lab 1: Моделирование полёта тела в атмосфере**

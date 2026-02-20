@@ -49,19 +49,27 @@ func airDensity(altitude float64) float64 {
 	return rho0 * math.Exp(-altitude / H)
 }
 
+
+//// Fd = 1/2 * (ρv^2) * Cd * A
+// velocity: new Velocity = old Velocity + (vcceleration * time)
+// position: new Position = old Position + (velocity * time)
+// time: advances by dt
 func simulate(req SimRequest) SimResult {
 	dt := req.Step
 	angle := req.AngleDeg * math.Pi / 180.0
 
 	vx := req.V0 * math.Cos(angle)
 	vy := req.V0 * math.Sin(angle)
+
 	x := 0.0
 	y := 0.0
 	t := 0.0
+
 	maxY := 0.0
 
 	var points []Point
 	storeEvery := 1
+
 	if dt < 0.001 {
 		storeEvery = 10
 	} else if dt < 0.01 {
@@ -74,7 +82,9 @@ func simulate(req SimRequest) SimResult {
 	for stepCount < maxSteps {
 		v := math.Sqrt(vx*vx + vy*vy)
 		rho := airDensity(y)
+
 		drag := 0.5 * req.Cd * rho * req.Area * v * v
+
 		ax := -drag * vx / (v * req.Mass)
 		ay := -g - drag * vy / (v * req.Mass)
 
