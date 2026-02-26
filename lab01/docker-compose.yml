@@ -1,6 +1,6 @@
 # lab01/docker-compose.yml — run lab1 in isolation (no gateway needed)
 #
-# run: (from lab1/ directory):
+# run: (from lab01/ directory):
 #   docker compose up --build
 #
 # access:

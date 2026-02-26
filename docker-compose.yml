@@ -21,9 +21,10 @@ services:
       lab1-frontend:
         condition: service_started
 
+  ### lab 1
   lab1-backend:
     build: ./lab01/backend
-    image: lemmedie/sim-course:lab1-frontend
+    image: lemmedie/sim-course:lab1-backend
     container_name: lab1-backend
     restart: unless-stopped
     networks:
@@ -41,7 +42,7 @@ services:
 
   lab1-frontend:
     build: ./lab01/frontend
-    image: lemmedie/sim-course:lab1-backend
+    image: lemmedie/sim-course:lab1-frontend
     container_name: lab1-frontend
     restart: unless-stopped
     networks:
@@ -51,41 +52,41 @@ services:
       lab1-backend:
         condition: service_healthy
 
-  # lab 2 template
-  # lab2-backend:
-  #   build: ./lab02/backend
-  #   image: lemmedie/sim-course:lab1-backend
-  #   container_name: lab2-backend
-  #   restart: unless-stopped
-  #   networks:
-  #     gateway-net:
-  #       aliases: []
-  #     lab2-net:
-  #       aliases:
-  #         - backend
-  #   healthcheck:
-  #     test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
-  #     interval: 8s
-  #     timeout: 5s
-  #     retries: 5
-  #     start_period: 5s
+  ### lab 2
+  lab2-backend:
+    build: ./lab02/backend
+    image: lemmedie/sim-course:lab2-backend
+    container_name: lab2-backend
+    restart: unless-stopped
+    networks:
+      gateway-net:
+        aliases: []
+      lab2-net:
+        aliases:
+          - backend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/health"]
+      interval: 8s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
-  # lab2-frontend:
-  #   build: ./lab02/frontend
-  #   image: lemmedie/sim-course:lab1-backend
-  #   container_name: lab2-frontend
-  #   restart: unless-stopped
-  #   networks:
-  #     - gateway-net
-  #     - lab2-net
-  #   depends_on:
-  #     lab2-backend:
-  #       condition: service_healthy
+  lab2-frontend:
+    build: ./lab02/frontend
+    image: lemmedie/sim-course:lab2-frontend
+    container_name: lab2-frontend
+    restart: unless-stopped
+    networks:
+      - gateway-net
+      - lab2-net
+    depends_on:
+      lab2-backend:
+        condition: service_healthy
 
 networks:
   gateway-net:
     name: gateway-net # gateway + all lab frontends + all lab backends
   lab1-net:
     name: lab1-net # lab1 internal (backend alias = "backend")
-  # lab2-net:
-  #   name: lab2-net
+  lab2-net:
+    name: lab2-net
