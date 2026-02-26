@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+        <title>Sim Lab 2 — Heat FDM Simulator</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <div class="page">
+            <header class="topbar fu">
+                <div class="brand">
+                    <div class="brand-icon">🔥</div>
+                    <div>
+                        <div class="brand-name">Lab 2</div>
+                        <div class="brand-sub">
+                            Метод конечных разностей для уравнения
+                            теплопроводности
+                        </div>
+                    </div>
+                </div>
+                <div class="topbar-meta">
+                    <div class="meta-pill">
+                        ∂u/∂t = <strong>α</strong> · ∂²u/∂x²
+                    </div>
+                    <div class="meta-pill">
+                        u(x,0) = <strong>A</strong>·sin(πx/L)
+                    </div>
+                    <div class="meta-pill">
+                        Stability: <strong>r</strong> = α·Δt/Δx² ≤ 0.5
+                    </div>
+                </div>
+            </header>
+
+            <aside class="sidebar fu d1">
+                <div>
+                    <div class="sh">Physical Parameters</div>
+
+                    <div class="param" id="p-alpha">
+                        <div class="param-head">
+                            <div class="param-label">
+                                <span class="param-greek">α</span> Diffusivity
+                            </div>
+                            <div class="inp-wrap">
+                                <input
+                                    class="inp-num"
+                                    id="v-alpha"
+                                    type="number"
+                                    value="0.001"
+                                    min="0.00001"
+                                    max="0.1"
+                                    step="0.0001"
+                                />
+                                <span class="inp-unit">m²/s</span>
+                            </div>
+                        </div>
+                        <div class="rng-wrap">
+                            <div class="rng-bg"></div>
+                            <div class="rng-fill" id="f-alpha"></div>
+                            <input
+                                type="range"
+                                id="s-alpha"
+                                min="-5"
+                                max="-1"
+                                step="0.01"
+                                value="-3"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="param">
+                        <div class="param-head">
+                            <div class="param-label">
+                                <span class="param-greek">L</span> Plate Length
+                            </div>
+                            <div class="inp-wrap">
+                                <input
+                                    class="inp-num"
+                                    id="v-L"
+                                    type="number"
+                                    value="1.0"
+                                    min="0.1"
+                                    max="10"
+                                    step="0.1"
+                                />
+                                <span class="inp-unit">m</span>
+                            </div>
+                        </div>
+                        <div class="rng-wrap">
+                            <div class="rng-bg"></div>
+                            <div class="rng-fill" id="f-L"></div>
+                            <input
+                                type="range"
+                                id="s-L"
+                                min="0.1"
+                                max="10"
+                                step="0.1"
+                                value="1.0"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="param">
+                        <div class="param-head">
+                            <div class="param-label">
+                                <span class="param-greek">T</span> Sim. Time
+                            </div>
+                            <div class="inp-wrap">
+                                <input
+                                    class="inp-num"
+                                    id="v-T"
+                                    type="number"
+                                    value="2.0"
+                                    min="0.1"
+                                    max="20"
+                                    step="0.1"
+                                />
+                                <span class="inp-unit">s</span>
+                            </div>
+                        </div>
+                        <div class="rng-wrap">
+                            <div class="rng-bg"></div>
+                            <div class="rng-fill" id="f-T"></div>
+                            <input
+                                type="range"
+                                id="s-T"
+                                min="0.1"
+                                max="20"
+                                step="0.1"
+                                value="2.0"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="param" style="margin-bottom: 0">
+                        <div class="param-head">
+                            <div class="param-label">
+                                <span class="param-greek">A</span> IC Peak Temp
+                            </div>
+                            <div class="inp-wrap">
+                                <input
+                                    class="inp-num"
+                                    id="v-A"
+                                    type="number"
+                                    value="100"
+                                    min="1"
+                                    max="1000"
+                                    step="1"
+                                />
+                                <span class="inp-unit">°C</span>
+                            </div>
+                        </div>
+                        <div class="rng-wrap">
+                            <div class="rng-bg"></div>
+                            <div class="rng-fill" id="f-A"></div>
+                            <input
+                                type="range"
+                                id="s-A"
+                                min="1"
+                                max="1000"
+                                step="1"
+                                value="100"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="sh">Discretization</div>
+
+                    <div class="param">
+                        <div class="param-head">
+                            <div class="param-label">
+                                <span class="param-greek">Δt</span> Time Step
+                            </div>
+                            <div class="inp-wrap">
+                                <input
+                                    class="inp-num"
+                                    id="v-dt"
+                                    type="number"
+                                    value="0.01"
+                                    min="0.00001"
+                                    max="0.5"
+                                    step="0.0001"
+                                />
+                                <span class="inp-unit">s</span>
+                            </div>
+                        </div>
+                        <div class="rng-wrap">
+                            <div class="rng-bg"></div>
+                            <div class="rng-fill" id="f-dt"></div>
+                            <input
+                                type="range"
+                                id="s-dt"
+                                min="0"
+                                max="3"
+                                step="1"
+                                value="1"
+                            />
+                        </div>
+                        <div class="ticks" id="ticks-dt"></div>
+                    </div>
+
+                    <div class="param" style="margin-bottom: 0">
+                        <div class="param-head">
+                            <div class="param-label">
+                                <span class="param-greek">Δx</span> Space Step
+                            </div>
+                            <div class="inp-wrap">
+                                <input
+                                    class="inp-num"
+                                    id="v-dx"
+                                    type="number"
+                                    value="0.01"
+                                    min="0.00001"
+                                    max="0.5"
+                                    step="0.0001"
+                                />
+                                <span class="inp-unit">m</span>
+                            </div>
+                        </div>
+                        <div class="rng-wrap">
+                            <div class="rng-bg"></div>
+                            <div class="rng-fill" id="f-dx"></div>
+                            <input
+                                type="range"
+                                id="s-dx"
+                                min="0"
+                                max="3"
+                                step="1"
+                                value="1"
+                            />
+                        </div>
+                        <div class="ticks" id="ticks-dx"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="sh">Stability Preview</div>
+                    <div class="stab-row">
+                        <div class="stab-left">
+                            <div class="stab-r-val ok" id="rVal">0.100000</div>
+                            <div class="stab-r-lbl">r = α·Δt / Δx²</div>
+                        </div>
+                        <div class="stab-badge ok" id="stabBadge">✓ Stable</div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="btn-stack">
+                        <button
+                            class="btn btn-primary"
+                            id="btnSingle"
+                            onclick="runSingle()"
+                        >
+                            <div class="spin" id="spinSingle"></div>
+                            <span class="btn-icon">▷</span>
+                            <span id="lblSingle">Run Single</span>
+                        </button>
+                        <button
+                            class="btn btn-outline"
+                            id="btnAll"
+                            onclick="runAll()"
+                        >
+                            <div class="spin spin-dark" id="spinAll"></div>
+                            <span class="btn-icon">⊞</span>
+                            <span id="lblAll">Run All 16 Combos</span>
+                        </button>
+                        <button class="btn btn-ghost" onclick="clearRuns()">
+                            <span class="btn-icon" style="font-size: 12px"
+                                >✕</span
+                            >
+                            Clear Graph &amp; Table
+                        </button>
+                    </div>
+                    <div class="prog" id="progWrap" style="margin-top: 12px">
+                        <div class="prog-head">
+                            <span class="prog-txt" id="progTxt"
+                                >Computing…</span
+                            >
+                            <span class="prog-num" id="progNum">0 / 16</span>
+                        </div>
+                        <div class="prog-track">
+                            <div class="prog-fill" id="progFill"></div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="main">
+                <div class="card fu d2">
+                    <div class="card-hdr">
+                        <div>
+                            <div class="card-ttl">
+                                Temperature Profile — u(x, T)
+                            </div>
+                            <div class="card-sub">
+                                u vs x at t = T<sub>final</sub> · each run adds
+                                a curve · hover to inspect
+                            </div>
+                        </div>
+                        <div
+                            style="
+                                display: flex;
+                                gap: 8px;
+                                flex-wrap: wrap;
+                                align-items: flex-start;
+                            "
+                            id="tableCountBadges"
+                        ></div>
+                    </div>
+                    <div class="card-body" style="padding-bottom: 10px">
+                        <div class="graph-wrap">
+                            <canvas id="graphCanvas" height="320"></canvas>
+                            <div class="graph-empty" id="graphEmpty">
+                                <div class="ge-icon">📈</div>
+                                <div class="ge-text">No data yet</div>
+                                <div class="ge-sub">
+                                    Run a simulation to see the temperature
+                                    profile
+                                </div>
+                            </div>
+                            <div class="graph-tip" id="graphTip"></div>
+                        </div>
+                    </div>
+                    <div class="legend-wrap" id="legendWrap"></div>
+                </div>
+
+                <div class="card fu d3">
+                    <div class="card-hdr">
+                        <div>
+                            <div class="card-ttl">
+                                Results Table — u(L/2, T) in °C
+                            </div>
+                            <div class="card-sub">
+                                Temperature at center point · filled from actual
+                                simulation runs · hover for details
+                            </div>
+                        </div>
+                        <div
+                            style="display: flex; gap: 8px; flex-wrap: wrap"
+                            id="tblBadges"
+                        ></div>
+                    </div>
+                    <div class="t-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Δt \ Δx</th>
+                                    <th>0.1 m</th>
+                                    <th>0.01 m</th>
+                                    <th>0.001 m</th>
+                                    <th>0.0001 m</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tblBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <div class="tip" id="tipEl">
+            <div class="tip-ttl" id="tipTtl"></div>
+            <div id="tipBody"></div>
+        </div>
+        <script src="script.js" defer></script>
+    </body>
+</html>
