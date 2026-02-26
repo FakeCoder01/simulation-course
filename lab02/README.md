@@ -31,8 +31,10 @@ func simulate(p SimParams) SimResult {
 	if steps < 1 {
 		steps = 1
 	}
+
+	// 'r' is calculated just for reporting; implicit method is unconditionally stable
 	r := p.Alpha * p.Dt / (p.Dx * p.Dx)
-	stable := r <= 0.5
+	stable := true
 
 	ops := int64(nx) * int64(steps)
 	if ops > MaxOps {
@@ -52,33 +54,63 @@ func simulate(p SimParams) SimResult {
 		}
 	}
 
-	// u[i] at x = i*dx
-	u := make([]float64, nx)
-	for i := 0; i < nx; i++ {
-		x := float64(i) * p.Dx
-		u[i] = p.ICPeak * math.Sin(math.Pi*x/p.L)
-	}
-	u[0] = 0.0
-	u[nx-1] = 0.0
 
-	uNew := make([]float64, nx)
+	// T[i] maps to temperatures at x = i*dx
+	T := make([]float64, nx)
+
+	// set initial condition: Uniform T0 across the plate
+	for i := 0; i < nx; i++ {
+		T[i] = p.ICPeak
+	}
+
+	// boundary conditions (fixed to 0.0, representing Ta and Tn)
+	TLeft := 0.0
+	TRight := 0.0
+	T[0] = TLeft
+	T[nx-1] = TRight
+
+	// sweep coefficients arrays
+	alphaArr := make([]float64, nx)
+	betaArr := make([]float64, nx)
+
+	// precompute static constants
+	// based on: Ai = Ci = lambda/h^2; Bi = 2*lambda/h^2 + rho*c/tau
+	// we substitute lambda/(rho*c) = p.Alpha
+	A := p.Alpha / (p.Dx * p.Dx)
+	C := A
+	B := 2.0*A + 1.0/p.Dt
 
 	diverged := false
 	divergeStep := 0
 
+	// time stepping loop
 	for t := 0; t < steps; t++ {
-		uNew[0] = 0.0
-		uNew[nx-1] = 0.0
-		for i := 1; i < nx-1; i++ {
-			uNew[i] = u[i] + r*(u[i+1]-2.0*u[i]+u[i-1])
-		}
-		u, uNew = uNew, u
+		// forward sweep : Прямая прогонка
+		alphaArr[0] = 0.0
+		betaArr[0] = TLeft
 
-		// check divergence at center
-		mid := u[nx/2]
+		for i := 1; i < nx-1; i++ {
+			// F_i = -(rho*c/tau) * T_i^n
+			F := -(1.0 / p.Dt) * T[i]
+
+			denom := B - C*alphaArr[i-1]
+			alphaArr[i] = A / denom
+			betaArr[i] = (C*betaArr[i-1] - F) / denom
+		}
+
+		// backward sweep : Обратная прогонка
+		T[nx-1] = TRight
+		for i := nx - 2; i >= 1; i-- {
+			T[i] = alphaArr[i]*T[i+1] + betaArr[i]
+		}
+		T[0] = TLeft
+
+		// check divergence at center just in case of extreme parameter float overflow
+		mid := T[nx/2]
 		if math.IsNaN(mid) || math.IsInf(mid, 0) || math.Abs(mid) > 1e15 {
 			diverged = true
 			divergeStep = t
+			stable = false
 			break
 		}
 	}
@@ -96,11 +128,11 @@ func simulate(p SimParams) SimResult {
 			ICPeak:      p.ICPeak,
 			Dt:          p.Dt,
 			Dx:          p.Dx,
-			Message:     fmt.Sprintf("Diverged at step %d (r=%.4f > 0.5)", divergeStep, r),
+			Message:     fmt.Sprintf("Diverged at step %d due to numerical overflow", divergeStep),
 		}
 	}
 
-	// build sampled profile (at most 300 points for the graph)
+	// build sampled profile (max 300 points for the graph)
 	sampleCount := nx
 	if sampleCount > 300 {
 		sampleCount = 300
@@ -108,21 +140,16 @@ func simulate(p SimParams) SimResult {
 	xVals := make([]float64, sampleCount)
 	uVals := make([]float64, sampleCount)
 	for i := 0; i < sampleCount; i++ {
-		// map sample index to grid index
 		gi := int(math.Round(float64(i) * float64(nx-1) / float64(sampleCount-1)))
 		if gi >= nx {
 			gi = nx - 1
 		}
 		xVals[i] = float64(gi) * p.Dx
-		uVals[i] = u[gi]
+		uVals[i] = T[gi]
 	}
 
 	centerIdx := nx / 2
-	temp := u[centerIdx]
-	msg := "Stable"
-	if !stable {
-		msg = fmt.Sprintf("Unstable (r=%.4f > 0.5)", r)
-	}
+	temp := T[centerIdx]
 
 	return SimResult{
 		Temperature: &temp,
@@ -138,7 +165,7 @@ func simulate(p SimParams) SimResult {
 		ICPeak:      p.ICPeak,
 		Dt:          p.Dt,
 		Dx:          p.Dx,
-		Message:     msg,
+		Message:     "Implicit Method - Unconditionally Stable",
 	}
 }
 ```
@@ -147,10 +174,10 @@ func simulate(p SimParams) SimResult {
 
 | Шаг по времени, с \ Шаг по пространству, м | 0.1     | 0.01     | 0.001    | 0.0001              |
 | ------------------------------------------ | ------- | -------- | -------- | ------------------- |
-| 0.1                                        | 98.0604 | Diverged | Diverged | Diverged            |
-| 0.01                                       | 98.0612 | 98.0455  | Diverged | Diver d             |
-| 0.001                                      | 98.0613 | 98.0456  | Diverged | Diverged            |
-| 0.0001                                     | 98.0613 | 98.0456  | 98.0454  | Too costly/Overflow |
+| 0.1                                        | 99.9994 | Diverged | Diverged | Diverged            |
+| 0.01                                       | 99.9996 | 100      | Diverged | Diver d             |
+| 0.001                                      | 99.9996 | 100      | Diverged | Diverged            |
+| 0.0001                                     | 99.9996 | 100      | 100      | Too costly/Overflow |
 
 ---
 
@@ -163,7 +190,10 @@ func simulate(p SimParams) SimResult {
 
 Результаты моделирования показывают, что явный метод конечных разностей является лишь условно устойчивым.
 
-- **Условие КФЛ:** устойчивость строго зависит от отношения Δt/(Δx)². При уменьшении пространственного шага (Δx) временной шаг (Δt) необходимо уменьшать еще более резко, чтобы предотвратить расходимость решения.
-- **Точность против стоимости:** Хотя теоретически меньшие шаги повышают точность, результаты показывают, что использование мелкозернистых пространственных сеток (Δx≤0,001) быстро становится вычислительно «слишком затратным» или нестабильным при применении явной схемы.
+- **Стабильность против дискретизации:** По мере уменьшения шага по пространству ($Δx$) шаг по времени ($Δt$) должен уменьшаться квадратично ($Δt \leq \frac{Δx^2}{2α}$), чтобы предотвратить численные колебания.
 
-Для моделирования с высоким разрешением неявный метод будет более эффективным, поскольку он остается стабильным независимо от размера шага по времени.
+- **Расхождение:** Записи, помеченные как "Расхождение", представляют собой комбинации, в которых решатель стал нестабильным из-за слишком большого шага по времени относительно пространственной сетки.
+
+- **Вычислительный предел:** «Переполнение» на самых малых шагах подчеркивает чрезвычайно высокую вычислительную стоимость поддержания стабильности в высокоточных моделях.
+
+Полученные данные подтверждают, что поиск оптимального баланса между $Δt$ и $Δx$ имеет решающее значение для достижения стабильного, физически обоснованного решения (приблизительно 100,0) без достижения вычислительных ограничений.

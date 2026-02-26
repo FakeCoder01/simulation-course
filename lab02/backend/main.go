@@ -11,24 +11,22 @@ import (
 
 const MaxOps = 100_000_000
 
-// temperature and profile may be nil if the simulation diverged or was too costly.
+// json format
 type SimResult struct {
-	// nil means diverged / too costly
 	Temperature *float64  `json:"temperature"`
-	Profile     []float64 `json:"profile"` // sampled u values over x (length = ProfilePoints)
-	XValues     []float64 `json:"x_values"` // corresponding x positions
+	Profile     []float64 `json:"profile"`
+	XValues     []float64 `json:"x_values"`
 	Stable      bool      `json:"stable"`
 	CFL         float64   `json:"cfl"`
 	NX          int       `json:"nx"`
 	Steps       int       `json:"steps"`
-	// params echoed back
-	Alpha   float64 `json:"alpha"`
-	L       float64 `json:"l"`
-	TFinal  float64 `json:"t_final"`
-	ICPeak  float64 `json:"ic_peak"`
-	Dt      float64 `json:"dt"`
-	Dx      float64 `json:"dx"`
-	Message string  `json:"message"`
+	Alpha       float64   `json:"alpha"`
+	L           float64   `json:"l"`
+	TFinal      float64   `json:"t_final"`
+	ICPeak      float64   `json:"ic_peak"`
+	Dt          float64   `json:"dt"`
+	Dx          float64   `json:"dx"`
+	Message     string    `json:"message"`
 }
 
 type SimParams struct {
@@ -61,8 +59,10 @@ func simulate(p SimParams) SimResult {
 	if steps < 1 {
 		steps = 1
 	}
+
+	// 'r' is calculated just for reporting; implicit method is unconditionally stable
 	r := p.Alpha * p.Dt / (p.Dx * p.Dx)
-	stable := r <= 0.5
+	stable := true
 
 	ops := int64(nx) * int64(steps)
 	if ops > MaxOps {
@@ -82,33 +82,63 @@ func simulate(p SimParams) SimResult {
 		}
 	}
 
-	// u[i] at x = i*dx
-	u := make([]float64, nx)
-	for i := 0; i < nx; i++ {
-		x := float64(i) * p.Dx
-		u[i] = p.ICPeak * math.Sin(math.Pi*x/p.L)
-	}
-	u[0] = 0.0
-	u[nx-1] = 0.0
 
-	uNew := make([]float64, nx)
+	// T[i] maps to temperatures at x = i*dx
+	T := make([]float64, nx)
+
+	// set initial condition: Uniform T0 across the plate
+	for i := 0; i < nx; i++ {
+		T[i] = p.ICPeak
+	}
+
+	// boundary conditions (fixed to 0.0, representing Ta and Tn)
+	TLeft := 0.0
+	TRight := 0.0
+	T[0] = TLeft
+	T[nx-1] = TRight
+
+	// sweep coefficients arrays
+	alphaArr := make([]float64, nx)
+	betaArr := make([]float64, nx)
+
+	// precompute static constants
+	// based on: Ai = Ci = lambda/h^2; Bi = 2*lambda/h^2 + rho*c/tau
+	// we substitute lambda/(rho*c) = p.Alpha
+	A := p.Alpha / (p.Dx * p.Dx)
+	C := A
+	B := 2.0*A + 1.0/p.Dt
 
 	diverged := false
 	divergeStep := 0
 
+	// time stepping loop
 	for t := 0; t < steps; t++ {
-		uNew[0] = 0.0
-		uNew[nx-1] = 0.0
-		for i := 1; i < nx-1; i++ {
-			uNew[i] = u[i] + r*(u[i+1]-2.0*u[i]+u[i-1])
-		}
-		u, uNew = uNew, u
+		// forward sweep : Прямая прогонка
+		alphaArr[0] = 0.0
+		betaArr[0] = TLeft
 
-		// check divergence at center
-		mid := u[nx/2]
+		for i := 1; i < nx-1; i++ {
+			// F_i = -(rho*c/tau) * T_i^n
+			F := -(1.0 / p.Dt) * T[i]
+
+			denom := B - C*alphaArr[i-1]
+			alphaArr[i] = A / denom
+			betaArr[i] = (C*betaArr[i-1] - F) / denom
+		}
+
+		// backward sweep : Обратная прогонка
+		T[nx-1] = TRight
+		for i := nx - 2; i >= 1; i-- {
+			T[i] = alphaArr[i]*T[i+1] + betaArr[i]
+		}
+		T[0] = TLeft
+
+		// check divergence at center just in case of extreme parameter float overflow
+		mid := T[nx/2]
 		if math.IsNaN(mid) || math.IsInf(mid, 0) || math.Abs(mid) > 1e15 {
 			diverged = true
 			divergeStep = t
+			stable = false
 			break
 		}
 	}
@@ -126,11 +156,11 @@ func simulate(p SimParams) SimResult {
 			ICPeak:      p.ICPeak,
 			Dt:          p.Dt,
 			Dx:          p.Dx,
-			Message:     fmt.Sprintf("Diverged at step %d (r=%.4f > 0.5)", divergeStep, r),
+			Message:     fmt.Sprintf("Diverged at step %d due to numerical overflow", divergeStep),
 		}
 	}
 
-	// build sampled profile (at most 300 points for the graph)
+	// build sampled profile (max 300 points for the graph)
 	sampleCount := nx
 	if sampleCount > 300 {
 		sampleCount = 300
@@ -138,21 +168,16 @@ func simulate(p SimParams) SimResult {
 	xVals := make([]float64, sampleCount)
 	uVals := make([]float64, sampleCount)
 	for i := 0; i < sampleCount; i++ {
-		// map sample index to grid index
 		gi := int(math.Round(float64(i) * float64(nx-1) / float64(sampleCount-1)))
 		if gi >= nx {
 			gi = nx - 1
 		}
 		xVals[i] = float64(gi) * p.Dx
-		uVals[i] = u[gi]
+		uVals[i] = T[gi]
 	}
 
 	centerIdx := nx / 2
-	temp := u[centerIdx]
-	msg := "Stable"
-	if !stable {
-		msg = fmt.Sprintf("Unstable (r=%.4f > 0.5)", r)
-	}
+	temp := T[centerIdx]
 
 	return SimResult{
 		Temperature: &temp,
@@ -168,7 +193,7 @@ func simulate(p SimParams) SimResult {
 		ICPeak:      p.ICPeak,
 		Dt:          p.Dt,
 		Dx:          p.Dx,
-		Message:     msg,
+		Message:     "Implicit Method - Unconditionally Stable",
 	}
 }
 
