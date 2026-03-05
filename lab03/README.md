@@ -15,4 +15,4 @@
 docker compose up --build
 ```
 
-> open **http://localhost** in your browser.
+> open **http://localhost:3001** in your browser.
