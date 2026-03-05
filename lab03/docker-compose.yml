@@ -1,0 +1,43 @@
+# lab03/docker-compose.yml — run lab3 in isolation (no gateway needed)
+#
+# run: (from lab03/ directory):
+#   docker compose up --build
+#
+# access:
+#   http://localhost:3001/           : SPA root
+#   http://localhost:3001/lab3/      : same SPA (both paths work)
+#   http://localhost:3001/lab3/api/  : API (nginx proxies to backend)
+
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: lab3-backend
+    restart: unless-stopped
+    networks:
+      lab3-net:
+        aliases:
+          - backend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/stats"]
+      interval: 8s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  frontend:
+    build: ./frontend
+    container_name: lab3-frontend
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    networks:
+      - lab3-net
+    depends_on:
+      backend:
+        condition: service_healthy
+
+networks:
+  lab3-net:
+    name: lab3-net-standalone
