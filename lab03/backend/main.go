@@ -175,10 +175,12 @@ func (s *Sim) placeRivers() {
 	for r := 0; r < n; r++ {
 		x := 15 + rand.Intn(W-30)
 		for y := 0; y < H; y++ {
+
 			width := 1 + rand.Intn(2)
 			for w := 0; w < width; w++ {
-				s.grid[y][(x+w+W)%W] = Cell{State: StateWater}
+				s.grid[y][(x+w+W) % W] = Cell{State: StateWater}
 			}
+
 			if rand.Float64() < 0.35 {
 				x += rand.Intn(3) - 1
 				if x < 2 {
@@ -195,6 +197,7 @@ func (s *Sim) placeRivers() {
 // windVec returns the wind vector scaled by strength
 func (s *Sim) windVec() (float64, float64) {
 	rad := s.cfg.WindAngle * math.Pi / 180.0
+
 	return math.Cos(rad) * s.cfg.WindStrength,
 		math.Sin(rad) * s.cfg.WindStrength
 }

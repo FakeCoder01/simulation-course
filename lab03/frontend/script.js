@@ -179,8 +179,10 @@ function animateRain() {
     ctxRain.moveTo(d.x, d.y);
     ctxRain.lineTo(d.x + d.len * 0.15, d.y + d.len);
     ctxRain.stroke();
+
     d.y += d.speed;
     d.x += d.speed * 0.12;
+
     if (d.y > CANVAS_H + 20) {
       d.y = -20;
       d.x = Math.random() * CANVAS_W;
@@ -220,6 +222,7 @@ function connect() {
       cells.set(msg.cells);
       elevation.set(msg.elevation);
       cfg = msg.config;
+
       applyConfig(cfg);
       updateStats(msg.stats);
       updateRunning(msg.running);
