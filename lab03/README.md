@@ -25,7 +25,7 @@ docker compose up --build
 
 2. **Созревание деревьев** : Молодое дерево -> Зрелое дерево с вероятностью `maturity_rate` (по умолчанию 0,004) за такт. У молодых деревьев вероятность возгорания на 35% ниже, чем у зрелых.
 
-3. **Речное противопожарное ограждение** : В камерах хранения воды вероятность возгорания равна 0%, и это происходит навсегда..
+3. **Речное противопожарное ограждение** : В камерах хранения воды вероятность возгорания равна 0%, и это происходит навсегда.
 
 4. **Сцена Тлеативные угли** : Горение -> Тлеющие угли (всегда, после 1 такта). Тлеющие угли → Пепел после 2–3 тактов. Тлеющие угли распространяют огонь с 60% от обычной вероятности возгорания. Дождь может перебросить тлеющие угли прямо в пепел с 20% вероятностью за такт.
 
@@ -49,9 +49,51 @@ docker compose up --build
 p = base_prob
   + (wind_alignment × 0.45)    // бонус за направление ветра
   + (elevation_diff × 0.35)    // бонус за подъем в гору (ошибка)
-  − (water_neighbors × 0.07)   // штраф за влажность
-  − (humidity × 0.60)          // штраф за влажность
+  - (water_neighbors × 0.07)   // штраф за влажность
+  - (humidity × 0.60)          // штраф за влажность
   × 0.60 (if neighbor is embers, not fire)
 
 base_prob = 0.38 (young)  |  0.55 (mature)  |  0.67 (old mature, age > 250)
 ```
+
+---
+
+1. **Spontaneous Growth**: Empty cell -> Young tree with a `growth_rate` probability (default 0.008) per tick
+
+2. **Tree Maturation**: Young tree -> Mature tree with a `maturity_rate` probability (default 0.004) per tick. Young trees have a 35% lower chance of catching fire than mature trees.
+
+3. **River Firebreak**: Water cell have a 0% chance of catching fire, and this happens permanently.
+
+4. **Ember Step**: Combustion -> Embers (always, after 1 tick). Embers -> Ashes after 2-3 ticks. Embers spread fire with 60% of the normal fire chance. Rain has a 20% chance per tick to throw smoldering embers directly into ash.
+
+5. **Elevation Variance**: The base ignition probability is adjusted by +-(elevDiff × 0.35) — when moving upwards, the sum is +0.35, and when moving downwards, it's -0.35.
+
+I want to implement this, but I'm getting errors.
+
+6. **Embers Jump**: Activates when wind_strength > 0.45. Each burning cell has a wind_strength × 0.12 chance per tick to launch a spark 2-4 cells in the direction of the wind.
+
+7. **Rain Events**: Triggers every 500-1100 ticks, lasts 60-180 ticks. During rain, the effective humidity is capped at min(1.0, humidity + 0.65), reducing the ignition probability to -0.39.
+
+8. **Humidity Zones**: Each water cell adjacent to a burning neighbor reduces its ignition probability by -0.07 for each adjacent water cell (down to -0.56 for 8 neighbors).
+
+9. **Old Tree Flammability**: Mature trees > 250 ticks old receive a +0.12 bonus to the base ignition probability.
+
+---
+
+It sounds like you're building a cellular automata simulation—something like a complex version of Conway’s "Game of Life" mixed with "Forest Fire." That's a classic but tricky project to get the logic right on!
+
+Here is the translation of your rules into Russian, followed by a quick breakdown of where those implementation errors might be hiding.
+
+---
+
+## правил
+
+1. **Спонтанный рост**: Пустая клетка -> Молодое дерево с вероятностью `growth_rate` (по умолчанию 0.008) за тик.
+2. **Созревание деревьев**: Молодое дерево -> Взрослое дерево с вероятностью `maturity_rate` (по умолчанию 0.004) за тик. У молодых деревьев вероятность возгорания на 35% ниже, чем у взрослых.
+3. **Речной противопожарный барьер**: Клетки воды имеют 0% вероятность возгорания, и это свойство постоянно.
+4. **Стадия углей**: Горение -> Угли (всегда, через 1 тик). Угли -> Пепел через 2–3 тика. Угли распространяют огонь с эффективностью 60% от нормального шанса возгорания. Дождь с вероятностью 20% за тик превращает тлеющие угли сразу в пепел.
+5. **Влияние рельефа**: Базовая вероятность возгорания корректируется на $\pm(\text{elevDiff} \times 0.35)$. При движении огня вверх по склону добавляется 0.35, при движении вниз — вычитается 0.35.
+6. **Скачок искр**: Активируется, если `wind_strength > 0.45`. Каждая горящая клетка имеет шанс `wind_strength × 0.12` за тик выпустить искру на 2–4 клетки в направлении ветра.
+7. **Погодные явления (Дождь)**: Срабатывает каждые 500–1100 тиков, длится от 60 до 180 тиков. Во время дождя эффективная влажность ограничивается значением $\min(1.0, \text{humidity} + 0.65)$, что снижает вероятность возгорания на 0.39.
+8. **Зоны влажности**: Каждая клетка воды, граничащая с потенциально загорающейся клеткой, снижает вероятность её возгорания на 0.07 (максимум до -0.56 при 8 соседях-водоёмах).
+9. **Горючесть старых деревьев**: Взрослые деревья старше 250 тиков получают бонус +0.12 к базовой вероятности возгорания.
