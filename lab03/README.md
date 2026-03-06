@@ -80,12 +80,6 @@ I want to implement this, but I'm getting errors.
 
 ---
 
-It sounds like you're building a cellular automata simulation—something like a complex version of Conway’s "Game of Life" mixed with "Forest Fire." That's a classic but tricky project to get the logic right on!
-
-Here is the translation of your rules into Russian, followed by a quick breakdown of where those implementation errors might be hiding.
-
----
-
 ## правил
 
 1. **Спонтанный рост**: Пустая клетка -> Молодое дерево с вероятностью `growth_rate` (по умолчанию 0.008) за тик.
