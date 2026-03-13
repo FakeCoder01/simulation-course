@@ -19,6 +19,10 @@ docker compose up --build
 
 ---
 
+Правила клеточного автомата: Модель представляет собой синхронный клеточный автомат размером 100×100. Каждая клетка может быть в одном из семи состояний: StateEmpty, StateYoung, StateMature, StateBurning, StateEmbers, StateAsh, StateWater. Эволюция происходит дискретными шагами. Используется окрестность Мура.
+
+---
+
 **Базовая формула возгорания (дерево загорается от соседа):**
 
 ```
@@ -34,29 +38,7 @@ base_prob = 0.38 (young)  |  0.55 (mature)  |  0.67 (old mature, age > 250)
 
 ---
 
-1. **Spontaneous Growth**: Empty cell -> Young tree with a `growth_rate` probability (default 0.008) per tick
-
-2. **Tree Maturation**: Young tree -> Mature tree with a `maturity_rate` probability (default 0.004) per tick. Young trees have a 35% lower chance of catching fire than mature trees.
-
-3. **River Firebreak**: Water cell have a 0% chance of catching fire, and this happens permanently.
-
-4. **Ember Step**: Fire -> Embers (always, after 1 tick). Embers -> Ashes after 2-3 ticks. Embers spread fire with 60% of the normal fire chance. Rain has a 20% chance per tick to throw smoldering embers directly into ash.
-
-5. **Elevation Variance**: The base ignition probability is adjusted by +-(elevDiff × 0.35) — when moving upwards, the sum is +0.35, and when moving downwards, it's -0.35.
-
-I want to implement this, but I'm getting errors.
-
-6. **Embers Jump**: Activates when wind_strength > 0.45. Each burning cell has a wind_strength × 0.12 chance per tick to launch a spark 2-4 cells in the direction of the wind.
-
-7. **Rain Events**: Triggers every 500-1100 ticks, lasts 60-180 ticks. During rain, the effective humidity is capped at min(1.0, humidity + 0.65), reducing the ignition probability to -0.39.
-
-8. **Humidity Zones**: Each water cell adjacent to a burning neighbor reduces its ignition probability by -0.07 for each adjacent water cell (down to -0.56 for 8 neighbors).
-
-9. **Old Tree Flammability**: Mature trees > 250 ticks old receive a +0.12 bonus to the base ignition probability.
-
----
-
-## правилы
+## правила
 
 1. **Спонтанный рост**: Пустая клетка -> Молодое дерево с вероятностью `growth_rate` (по умолчанию 0.008) за тик.
 2. **Созревание деревьев**: Молодое дерево -> Взрослое дерево с вероятностью `maturity_rate` (по умолчанию 0.004) за тик. У молодых деревьев вероятность возгорания на 35% ниже, чем у взрослых.
@@ -67,3 +49,5 @@ I want to implement this, but I'm getting errors.
 7. **Погодные явления (Дождь)**: Срабатывает каждые 500–1100 тиков, длится от 60 до 180 тиков. Во время дождя эффективная влажность ограничивается значением $\min(1.0, \text{humidity} + 0.65)$, что снижает вероятность возгорания на 0.39.
 8. **Зоны повышенной влажности**: Каждая клетка воды, граничащая с потенциально загорающейся клеткой, снижает вероятность её возгорания на 0.07 (максимум до -0.56 при 8 соседях-водоёмах).
 9. **Горючесть старых деревьев**: Взрослые деревья старше 250 тиков получают бонус +0.12 к базовой вероятности возгорания.
+
+**Вывод**: Разработанная модель симулирует лесной пожар методом клеточных автоматов, где поле состоит из клеток, которые могут гореть, быть деревьями или камнями. Скорость распространения огня зависит от ветра и температуры, а пользователь может управлять симуляцией в реальном времени. Программа позволяет наглядно изучать влияние внешних факторов на динамику пожара и тестировать способы его локализации.
