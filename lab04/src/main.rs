@@ -18,7 +18,7 @@ impl LcgRng {
             state: seed,
             a: 25214903917,
             c: 11,
-            m: 1 << 48, // 2^48
+            m: 1 << 48,
         }
     }
 
@@ -37,7 +37,7 @@ fn calculate_statistics(data: &[f64]) -> (f64, f64) {
 
     let mean = data.iter().sum::<f64>() / n;
 
-    let variance = data.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0);
+    let variance = data.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / (n - 1);
 
     (mean, variance)
 }
