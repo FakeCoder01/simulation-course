@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stochastic_backend
+    restart: unless-stopped
+    expose:
+      - "8080"
+    networks:
+      - app-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: stochastic_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80" # access the app at http://localhost:3000
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge

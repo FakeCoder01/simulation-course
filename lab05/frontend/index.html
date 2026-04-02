@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Stochastic Simulation - Lab 5</title>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+            rel="stylesheet"
+        />
+
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            display: ['"Playfair Display"', "Georgia", "serif"],
+                            body: ['"Source Sans 3"', "sans-serif"],
+                            mono: ['"JetBrains Mono"', "monospace"],
+                        },
+                        colors: {
+                            cream: { DEFAULT: "#FAF7F2", dark: "#F0EBE1" },
+                            ink: {
+                                light: "#6B5E52",
+                                DEFAULT: "#3D2B1F",
+                                dark: "#1A0F08",
+                            },
+                            burgundy: {
+                                light: "#A85060",
+                                DEFAULT: "#7C2D3E",
+                                dark: "#5A1A28",
+                            },
+                            sage: {
+                                light: "#C8D5C0",
+                                DEFAULT: "#8DA98A",
+                                dark: "#5E7A5B",
+                            },
+                            amber: {
+                                light: "#F5DFA8",
+                                DEFAULT: "#D4A843",
+                                dark: "#A07820",
+                            },
+                            slate: {
+                                light: "#B8C4CC",
+                                DEFAULT: "#6B8090",
+                                dark: "#3D5466",
+                            },
+                        },
+                    },
+                },
+            };
+        </script>
+
+        <link rel="stylesheet" href="style.css" />
+    </head>
+
+    <body class="relative z-10">
+        <header
+            class="border-b border-amber-light/60"
+            style="background: linear-gradient(to right, #3d2b1f, #5a1a28)"
+        >
+            <div class="max-w-4xl mx-auto px-6 py-5 flex items-center gap-4">
+                <div
+                    class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style="background: rgba(255, 255, 255, 0.12)"
+                >
+                    <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 22 22"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <circle
+                            cx="11"
+                            cy="11"
+                            r="9"
+                            stroke="#F5DFA8"
+                            stroke-width="1.5"
+                        />
+                        <path
+                            d="M6 11 Q8 7 11 11 Q14 15 16 11"
+                            stroke="#F5DFA8"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            fill="none"
+                        />
+                        <circle cx="11" cy="11" r="1.5" fill="#F5DFA8" />
+                    </svg>
+                </div>
+                <div>
+                    <p
+                        class="text-xs font-body font-500 tracking-widest uppercase"
+                        style="color: rgba(245, 223, 168, 0.7)"
+                    >
+                        Laboratory Work 5
+                    </p>
+                    <h1
+                        class="font-display font-600 text-lg leading-tight"
+                        style="color: #faf7f2"
+                    >
+                        Stochastic Simulation
+                    </h1>
+                </div>
+                <div class="ml-auto hidden sm:block">
+                    <span
+                        class="text-xs font-mono px-3 py-1 rounded-full"
+                        style="
+                            background: rgba(255, 255, 255, 0.08);
+                            color: rgba(245, 223, 168, 0.8);
+                            border: 1px solid rgba(245, 223, 168, 0.2);
+                        "
+                    >
+                        P{α &lt; p} = p
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!--tabs-->
+        <div class="max-w-4xl mx-auto px-6 mt-8">
+            <div
+                class="relative flex gap-0 border-b border-ink-light/20"
+                id="tabBar"
+            >
+                <button
+                    id="tab1"
+                    onclick="switchTab(1)"
+                    class="tab-btn px-6 py-3 font-body font-500 text-sm transition-colors duration-200 relative"
+                    style="color: #7c2d3e; border-bottom: 2px solid #7c2d3e"
+                >
+                    <span class="flex items-center gap-2">
+                        <svg
+                            width="14"
+                            height="14"
+                            fill="none"
+                            viewBox="0 0 16 16"
+                        >
+                            <circle
+                                cx="8"
+                                cy="8"
+                                r="6.5"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                            />
+                            <path
+                                d="M8 5v3l2 2"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
+                            />
+                        </svg>
+                        Lab 5.1 — Yes or No
+                    </span>
+                </button>
+                <button
+                    id="tab2"
+                    onclick="switchTab(2)"
+                    class="tab-btn px-6 py-3 font-body font-500 text-sm transition-colors duration-200 relative"
+                    style="color: #6b5e52; border-bottom: 2px solid transparent"
+                >
+                    <span class="flex items-center gap-2">
+                        <svg
+                            width="14"
+                            height="14"
+                            fill="none"
+                            viewBox="0 0 16 16"
+                        >
+                            <circle
+                                cx="8"
+                                cy="8"
+                                r="6.5"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                            />
+                            <circle
+                                cx="8"
+                                cy="8"
+                                r="2.5"
+                                stroke="currentColor"
+                                stroke-width="1.2"
+                            />
+                            <path
+                                d="M8 3.5V5M8 11v1.5M3.5 8H5M11 8h1.5"
+                                stroke="currentColor"
+                                stroke-width="1.2"
+                                stroke-linecap="round"
+                            />
+                        </svg>
+                        Lab 5.2 — Magic 8-Ball
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <main id="panel1" class="max-w-4xl mx-auto px-6 py-8">
+            <div
+                class="mb-6 px-4 py-3 rounded-lg text-sm font-body"
+                style="
+                    background: #f5efe6;
+                    border-left: 3px solid #d4a843;
+                    color: #6b5e52;
+                "
+            >
+                <span class="font-600" style="color: #3d2b1f">Principle:</span>
+                Generate α ~ Uniform[0,1). Event A occurs if α &lt; p, giving
+                P{A} = p.
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="card p-6">
+                    <h2
+                        class="font-display font-600 text-lg mb-5"
+                        style="color: #3d2b1f"
+                    >
+                        Configure Event
+                    </h2>
+
+                    <div class="mb-5">
+                        <label
+                            class="block text-xs font-500 tracking-wider uppercase mb-2"
+                            style="color: #6b5e52"
+                            >Your Question</label
+                        >
+                        <input
+                            id="q1input"
+                            type="text"
+                            placeholder="Should I go to university today?"
+                            class="w-full px-4 py-2.5 text-sm font-body rounded-lg outline-none transition-all duration-200"
+                            style="
+                                background: #faf7f2;
+                                border: 1.5px solid #d6cec6;
+                                color: #3d2b1f;
+                            "
+                            onfocus="this.style.borderColor='#7C2D3E'"
+                            onblur="this.style.borderColor='#D6CEC6'"
+                        />
+                    </div>
+
+                    <div class="mb-5">
+                        <div class="flex justify-between items-center mb-2">
+                            <label
+                                class="text-xs font-500 tracking-wider uppercase"
+                                style="color: #6b5e52"
+                                >Probability p = P{A}</label
+                            >
+                            <span
+                                id="probDisplay"
+                                class="font-mono text-sm font-500"
+                                style="color: #7c2d3e"
+                                >0.50</span
+                            >
+                        </div>
+                        <input
+                            id="probSlider"
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value="0.50"
+                            class="w-full"
+                            style="--val: 50%"
+                            oninput="updateSlider(this)"
+                        />
+                        <div
+                            class="flex justify-between text-xs mt-1.5"
+                            style="color: #a89888"
+                        >
+                            <span>0% (Never)</span>
+                            <span>50%</span>
+                            <span>100% (Always)</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label
+                            class="block text-xs font-500 tracking-wider uppercase mb-2"
+                            style="color: #6b5e52"
+                            >Or enter exact value</label
+                        >
+                        <input
+                            id="probExact"
+                            type="number"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value="0.50"
+                            class="w-32 px-3 py-2 text-sm font-mono rounded-lg outline-none transition-all duration-200"
+                            style="
+                                background: #faf7f2;
+                                border: 1.5px solid #d6cec6;
+                                color: #3d2b1f;
+                            "
+                            onfocus="this.style.borderColor='#7C2D3E'"
+                            onblur="this.style.borderColor='#D6CEC6'"
+                            oninput="syncExact(this)"
+                        />
+                    </div>
+
+                    <button
+                        onclick="askYesNo()"
+                        class="btn-primary w-full py-3 rounded-xl font-body font-600 text-sm tracking-wide text-white transition-all duration-200"
+                        style="
+                            background: linear-gradient(
+                                135deg,
+                                #7c2d3e,
+                                #a85060
+                            );
+                            box-shadow: 0 4px 14px rgba(124, 45, 62, 0.3);
+                        "
+                    >
+                        Generate Answer
+                    </button>
+                </div>
+
+                <div class="card p-6 flex flex-col">
+                    <h2
+                        class="font-display font-600 text-lg mb-5"
+                        style="color: #3d2b1f"
+                    >
+                        Result
+                    </h2>
+
+                    <div
+                        id="yn-answer-area"
+                        class="flex-1 flex flex-col items-center justify-center min-h-40 rounded-xl mb-4"
+                        style="
+                            background: #faf7f2;
+                            border: 1.5px dashed #d6cec6;
+                        "
+                    >
+                        <p class="text-sm font-body" style="color: #a89888">
+                            Awaiting simulation…
+                        </p>
+                    </div>
+
+                    <div
+                        id="yn-debug"
+                        class="hidden rounded-lg p-3 text-xs font-mono space-y-1"
+                        style="background: #f5efe6; border: 1px solid #e8ddd0"
+                    ></div>
+                </div>
+            </div>
+
+            <div class="mt-6 card p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-display font-600" style="color: #3d2b1f">
+                        Session History
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <span
+                            id="yn-stats"
+                            class="text-xs font-mono"
+                            style="color: #6b5e52"
+                        ></span>
+                        <button
+                            onclick="clearHistory1()"
+                            class="text-xs font-body px-3 py-1 rounded-md transition-colors"
+                            style="color: #a85060; border: 1px solid #e0bfbf"
+                            onmouseenter="this.style.background='#FDF0F0'"
+                            onmouseleave="this.style.background='transparent'"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                </div>
+                <div
+                    id="yn-history"
+                    class="space-y-2 max-h-48 overflow-y-auto pr-1"
+                >
+                    <p
+                        class="text-xs font-body text-center py-4"
+                        style="color: #c8b8a8"
+                    >
+                        No experiments yet
+                    </p>
+                </div>
+            </div>
+        </main>
+
+        <main id="panel2" class="max-w-4xl mx-auto px-6 py-8 hidden">
+            <div
+                class="mb-6 px-4 py-3 rounded-lg text-sm font-body"
+                style="
+                    background: #f5efe6;
+                    border-left: 3px solid #d4a843;
+                    color: #6b5e52;
+                "
+            >
+                <span class="font-600" style="color: #3d2b1f">Principle:</span>
+                m = 20 equally probable events (p<sub>k</sub> = 1/20 each). Find
+                k where α falls in cumulative interval.
+            </div>
+
+            <div class="grid md:grid-cols-5 gap-6">
+                <div class="md:col-span-2 flex flex-col items-center gap-5">
+                    <div
+                        class="ball-container cursor-pointer select-none"
+                        id="ball8"
+                        onclick="askMagic8()"
+                    >
+                        <svg
+                            id="ballSvg"
+                            width="200"
+                            height="200"
+                            viewBox="0 0 200 200"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <defs>
+                                <radialGradient
+                                    id="ballGrad"
+                                    cx="38%"
+                                    cy="35%"
+                                    r="60%"
+                                >
+                                    <stop offset="0%" stop-color="#4A3A4A" />
+                                    <stop offset="60%" stop-color="#1A1020" />
+                                    <stop offset="100%" stop-color="#0D0810" />
+                                </radialGradient>
+                                <radialGradient
+                                    id="shineGrad"
+                                    cx="35%"
+                                    cy="30%"
+                                    r="45%"
+                                >
+                                    <stop
+                                        offset="0%"
+                                        stop-color="rgba(255,255,255,0.18)"
+                                    />
+                                    <stop
+                                        offset="100%"
+                                        stop-color="rgba(255,255,255,0)"
+                                    />
+                                </radialGradient>
+                                <radialGradient
+                                    id="windowGrad"
+                                    cx="50%"
+                                    cy="50%"
+                                    r="50%"
+                                >
+                                    <stop offset="0%" stop-color="#1C2B4A" />
+                                    <stop offset="100%" stop-color="#0D1A30" />
+                                </radialGradient>
+                            </defs>
+                            <circle
+                                cx="100"
+                                cy="100"
+                                r="96"
+                                fill="url(#ballGrad)"
+                            />
+                            <circle
+                                cx="100"
+                                cy="100"
+                                r="96"
+                                fill="url(#shineGrad)"
+                            />
+                            <ellipse
+                                cx="72"
+                                cy="62"
+                                rx="22"
+                                ry="14"
+                                fill="rgba(255,255,255,0.07)"
+                                transform="rotate(-20,72,62)"
+                            />
+                            <circle
+                                cx="100"
+                                cy="108"
+                                r="36"
+                                fill="url(#windowGrad)"
+                                stroke="#2A3F60"
+                                stroke-width="1"
+                            />
+                            <text
+                                id="ball8Label"
+                                x="100"
+                                y="115"
+                                text-anchor="middle"
+                                font-family="Playfair Display, serif"
+                                font-size="36"
+                                font-weight="700"
+                                fill="#FAF7F2"
+                                opacity="0.9"
+                            >
+                                8
+                            </text>
+                            <foreignObject
+                                id="ballAnswerFO"
+                                x="64"
+                                y="72"
+                                width="72"
+                                height="72"
+                                style="display: none"
+                            >
+                                <div
+                                    xmlns="http://www.w3.org/1999/xhtml"
+                                    style="
+                                        width: 72px;
+                                        height: 72px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        text-align: center;
+                                        font-family:
+                                            &quot;Source Sans 3&quot;,
+                                            sans-serif;
+                                        font-size: 9px;
+                                        font-weight: 600;
+                                        color: #a8c8e8;
+                                        line-height: 1.3;
+                                    "
+                                    id="ballAnswerText"
+                                ></div>
+                            </foreignObject>
+                            <circle
+                                cx="100"
+                                cy="100"
+                                r="96"
+                                fill="none"
+                                stroke="rgba(255,255,255,0.06)"
+                                stroke-width="1.5"
+                            />
+                        </svg>
+                    </div>
+
+                    <p
+                        class="text-xs font-body text-center"
+                        style="color: #a89888"
+                    >
+                        Click the ball or press the button
+                    </p>
+
+                    <div class="w-full">
+                        <input
+                            id="q2input"
+                            type="text"
+                            placeholder="Will my code compile on first try?"
+                            class="w-full px-4 py-2.5 text-sm font-body rounded-lg outline-none transition-all duration-200"
+                            style="
+                                background: #faf7f2;
+                                border: 1.5px solid #d6cec6;
+                                color: #3d2b1f;
+                            "
+                            onfocus="this.style.borderColor='#7C2D3E'"
+                            onblur="this.style.borderColor='#D6CEC6'"
+                            onkeydown="if(event.key==='Enter') askMagic8()"
+                        />
+                    </div>
+
+                    <button
+                        onclick="askMagic8()"
+                        class="btn-primary w-full py-3 rounded-xl font-body font-600 text-sm tracking-wide text-white"
+                        style="
+                            background: linear-gradient(
+                                135deg,
+                                #3d5466,
+                                #6b8090
+                            );
+                            box-shadow: 0 4px 14px rgba(61, 84, 102, 0.3);
+                        "
+                    >
+                        Ask the Ball
+                    </button>
+
+                    <div
+                        id="m8-debug"
+                        class="hidden w-full rounded-lg p-3 text-xs font-mono space-y-1"
+                        style="
+                            background: #f5efe6;
+                            border: 1px solid #e8ddd0;
+                            color: #3d2b1f;
+                        "
+                    ></div>
+                </div>
+
+                <div class="md:col-span-3 flex flex-col gap-4">
+                    <div class="card p-4">
+                        <h3
+                            class="font-display font-600 text-sm mb-3"
+                            style="color: #3d2b1f"
+                        >
+                            Answer Distribution (m = 20, p<sub>k</sub> = 1/20)
+                        </h3>
+                        <div class="space-y-1.5" id="m8-distribution"></div>
+                    </div>
+
+                    <div class="card p-4 flex-1">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3
+                                class="font-display font-600 text-sm"
+                                style="color: #3d2b1f"
+                            >
+                                Session History
+                            </h3>
+                            <button
+                                onclick="clearHistory2()"
+                                class="text-xs font-body px-3 py-1 rounded-md transition-colors"
+                                style="
+                                    color: #6b8090;
+                                    border: 1px solid #c0cdd6;
+                                "
+                                onmouseenter="this.style.background='#F0F4F6'"
+                                onmouseleave="this.style.background='transparent'"
+                            >
+                                Clear
+                            </button>
+                        </div>
+                        <div
+                            id="m8-history"
+                            class="space-y-2 max-h-56 overflow-y-auto pr-1"
+                        >
+                            <p
+                                class="text-xs font-body text-center py-4"
+                                style="color: #c8b8a8"
+                            >
+                                No experiments yet
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="max-w-4xl mx-auto px-6 py-8 mt-4">
+            <div class="border-t border-ink-light/10 pt-6 text-center">
+                <p class="ornament">✦ ✦ ✦</p>
+                <p class="text-xs font-body mt-2" style="color: #b8a898">
+                    Stochastic Simulation · Laboratory Work 5 · Modeling Random
+                    Events
+                </p>
+            </div>
+        </footer>
+
+        <script src="script.js"></script>
+    </body>
+</html>
