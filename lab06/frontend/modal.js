@@ -14,8 +14,20 @@ async function runBatchAnalysis() {
   const normalTbody = document.getElementById("modal-table-normal");
 
   // loading state
-  discreteTbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500 font-semibold animate-pulse">Running discrete simulations...</td></tr>`;
-  normalTbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500 font-semibold animate-pulse">Running normal simulations...</td></tr>`;
+  discreteTbody.innerHTML = `
+    <tr>
+      <td colspan="5" class="text-center py-4 text-gray-500 font-semibold animate-pulse">
+        Running discrete simulations...
+      </td>
+    </tr>
+  `;
+  normalTbody.innerHTML = `
+    <tr>
+      <td colspan="5" class="text-center py-4 text-gray-500 font-semibold animate-pulse">
+        Running normal simulations...
+      </td>
+    </tr>
+  `;
 
   // get current inputs from the main UI
   const probs = [];
@@ -55,25 +67,33 @@ async function runBatchAnalysis() {
 function buildTableRow(n, data) {
   const isPassed = data.passed;
   const resultBadge = isPassed
-    ? `<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-bold">Passed (Accept H0)</span>`
-    : `<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-sm font-bold">Неуспешный (Reject H0)</span>`;
+    ? `
+      <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-bold">
+        Passed (Accept H0)
+      </span>
+    `
+    : `
+      <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-sm font-bold">
+        Неуспешный (Reject H0)
+      </span>
+    `;
 
   return `
-        <tr class="hover:bg-gray-50">
-            <td class="py-2 px-4 border-b font-bold">${n}</td>
-            <td class="py-2 px-4 border-b">
-                ${data.mean.toFixed(3)}
-                <span class="text-gray-500 text-sm">(${data.meanErr.toFixed(2)}%)</span>
-            </td>
-            <td class="py-2 px-4 border-b">
-                ${data.variance.toFixed(3)}
-                <span class="text-gray-500 text-sm">(${data.varErr.toFixed(2)}%)</span>
-            </td>
-            <td class="py-2 px-4 border-b">
-                ${data.chiSq.toFixed(2)}
-                <span class="text-xs text-gray-400">&lt; ${data.critVal.toFixed(2)}</span>
-            </td>
-            <td class="py-2 px-4 border-b">${resultBadge}</td>
-        </tr>
-    `;
+    <tr class="hover:bg-gray-50">
+      <td class="py-2 px-4 border-b font-bold">${n}</td>
+      <td class="py-2 px-4 border-b">
+        ${data.mean.toFixed(3)}
+        <span class="text-gray-500 text-sm">(${data.meanErr.toFixed(2)}%)</span>
+      </td>
+      <td class="py-2 px-4 border-b">
+        ${data.variance.toFixed(3)}
+        <span class="text-gray-500 text-sm">(${data.varErr.toFixed(2)}%)</span>
+      </td>
+      <td class="py-2 px-4 border-b">
+        ${data.chiSq.toFixed(2)}
+        <span class="text-xs text-gray-400">&lt; ${data.critVal.toFixed(2)}</span>
+      </td>
+      <td class="py-2 px-4 border-b">${resultBadge}</td>
+    </tr>
+  `;
 }

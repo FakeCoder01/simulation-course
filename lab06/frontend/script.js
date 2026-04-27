@@ -10,6 +10,7 @@ for (let i = 1; i <= 5; i++) {
     <div class="flex justify-between items-center">
       <label>Prob ${i}</label>
       <input type="number" step="0.01" id="p${i}"
+        max="1" min="0"
         class="w-24 border p-1 rounded ${isAuto ? "bg-gray-300" : ""}"
         ${isAuto ? "readonly" : 'value="0.2" onchange="calcAutoProb()"'}
       >
@@ -29,8 +30,19 @@ calcAutoProb();
 
 async function runDiscrete() {
   const probs = [];
+  let totalSumValue = 0;
   for (let i = 1; i <= 5; i++) {
-    probs.push(parseFloat(document.getElementById(`p${i}`).value));
+    const value = parseFloat(document.getElementById(`p${i}`).value);
+    if (value < 0) {
+      alert("Value must be greater than 0");
+      return;
+    }
+    probs.push(value);
+    totalSumValue += parseFloat(value);
+  }
+  if (totalSumValue !== 1) {
+    alert("Total sum value must be 1");
+    return;
   }
   const n = parseInt(document.getElementById("discrete-n").value);
 
@@ -78,6 +90,12 @@ async function runDiscrete() {
 async function runNormal() {
   const mean = parseFloat(document.getElementById("normal-mean").value);
   const variance = parseFloat(document.getElementById("normal-var").value);
+
+  if (variance <= 0) {
+    alert("Variance must be more than 0");
+    return;
+  }
+
   const n = parseInt(document.getElementById("normal-n").value);
 
   const res = await fetch(`${API_BASE}/normal`, {
