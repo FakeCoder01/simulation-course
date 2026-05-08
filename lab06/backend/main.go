@@ -54,14 +54,18 @@ func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+
 func discreteHandler(w http.ResponseWriter, r *http.Request) {
 	var req DiscreteReq
-	json.NewDecoder(r.Body).Decode(&req)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	n := req.N
 	counts := make([]int, len(req.Probs))
 
-	// sim
+	// Simulation logic remains the same
 	for i := 0; i < n; i++ {
 		u := rand.Float64()
 		sum := 0.0
@@ -76,6 +80,14 @@ func discreteHandler(w http.ResponseWriter, r *http.Request) {
 
 	empFreqs := make([]float64, len(req.Probs))
 	var empMean, theorMean, empVar, theorVar float64
+
+	// Count how many outcomes are actually possible
+	activeBins := 0
+	for _, p := range req.Probs {
+		if p > 0 {
+			activeBins++
+		}
+	}
 
 	for i := range req.Probs {
 		val := float64(i + 1)
@@ -93,15 +105,41 @@ func discreteHandler(w http.ResponseWriter, r *http.Request) {
 	var chiSq float64
 	for i := range req.Probs {
 		expected := float64(n) * req.Probs[i]
-		if expected > 0 {
+		if expected > 0 { // Skip bins where probability is 0
 			chiSq += math.Pow(float64(counts[i])-expected, 2) / expected
 		}
 	}
 
-	meanErr := math.Abs(empMean-theorMean) / theorMean * 100
-	varErr := math.Abs(empVar-theorVar) / theorVar * 100
-	df := len(req.Probs) - 1
-	critVal := getCriticalValue(df)
+	// Safety check for Mean Error
+	meanErr := 0.0
+	if theorMean != 0 {
+		meanErr = math.Abs(empMean-theorMean) / theorMean * 100
+	} else {
+		meanErr = math.Abs(empMean) * 100
+	}
+
+	// Safety check for Variance Error
+	varErr := 0.0
+	if theorVar > 0 {
+		varErr = math.Abs(empVar-theorVar) / theorVar * 100
+	} else if empVar > 0 {
+		varErr = 100.0 // If theor is 0 but we somehow got variance
+	}
+
+	// Dynamic Degrees of Freedom
+	df := activeBins - 1
+	passed := true
+	critVal := 0.0
+
+	if df > 0 {
+		critVal = getCriticalValue(df)
+		passed = chiSq <= critVal
+	} else {
+		// If only 1 bin is possible, ChiSq will always be 0.
+		// We define this as "passing" because the simulation matches the only possible outcome.
+		critVal = 0
+		passed = (chiSq == 0)
+	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"frequencies": empFreqs,
@@ -111,7 +149,7 @@ func discreteHandler(w http.ResponseWriter, r *http.Request) {
 		"varErr":      varErr,
 		"chiSq":       chiSq,
 		"critVal":     critVal,
-		"passed":      chiSq <= critVal,
+		"passed":      passed,
 	})
 }
 

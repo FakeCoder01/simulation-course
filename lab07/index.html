@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Markov Weather Model</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-gray-100 p-8 text-gray-800">
+        <div class="max-w-4xl mx-auto bg-white p-6 rounded shadow">
+            <h1 class="text-2xl font-bold mb-4">Markov Weather Simulation</h1>
+
+            <div class="mb-6">
+                <h2 class="text-lg font-semibold mb-2">
+                    Transition Probabilities Matrix (Rows must sum to 1)
+                </h2>
+                <div
+                    class="grid grid-cols-4 gap-2 text-center items-center font-semibold"
+                >
+                    <div></div>
+                    <div>Clear (1)</div>
+                    <div>Cloudy (2)</div>
+                    <div>Overcast (3)</div>
+                    <div>Clear (1)</div>
+                    <input
+                        type="number"
+                        id="p00"
+                        step="0.1"
+                        value="0.6"
+                        class="border p-1"
+                    />
+                    <input
+                        type="number"
+                        id="p01"
+                        step="0.1"
+                        value="0.3"
+                        class="border p-1"
+                    />
+                    <input
+                        type="number"
+                        id="p02"
+                        step="0.1"
+                        value="0.1"
+                        class="border p-1"
+                    />
+                    <div>Cloudy (2)</div>
+                    <input
+                        type="number"
+                        id="p10"
+                        step="0.1"
+                        value="0.4"
+                        class="border p-1"
+                    />
+                    <input
+                        type="number"
+                        id="p11"
+                        step="0.1"
+                        value="0.4"
+                        class="border p-1"
+                    />
+                    <input
+                        type="number"
+                        id="p12"
+                        step="0.1"
+                        value="0.2"
+                        class="border p-1"
+                    />
+                    <div>Overcast (3)</div>
+                    <input
+                        type="number"
+                        id="p20"
+                        step="0.1"
+                        value="0.2"
+                        class="border p-1"
+                    />
+                    <input
+                        type="number"
+                        id="p21"
+                        step="0.1"
+                        value="0.5"
+                        class="border p-1"
+                    />
+                    <input
+                        type="number"
+                        id="p22"
+                        step="0.1"
+                        value="0.3"
+                        class="border p-1"
+                    />
+                </div>
+
+                <div class="mt-4 flex items-center gap-4">
+                    <label class="font-semibold">Days to simulate:</label>
+                    <input
+                        type="number"
+                        id="days"
+                        value="1000"
+                        class="border p-1 w-24"
+                    />
+                    <button
+                        onclick="runSimulation()"
+                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    >
+                        Run Simulation
+                    </button>
+                    <a
+                        href="/download"
+                        id="downloadBtn"
+                        class="hidden bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                        >Download CSV</a
+                    >
+                </div>
+            </div>
+
+            <div id="results" class="hidden mt-8">
+                <h2 class="text-xl font-bold mb-4">Distribution Results</h2>
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="border p-2">State</th>
+                            <th class="border p-2">Empirical (Simulated)</th>
+                            <th class="border p-2">Theoretical (Stationary)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <script>
+            async function runSimulation() {
+                const p = [
+                    [
+                        parseFloat(document.getElementById("p00").value),
+                        parseFloat(document.getElementById("p01").value),
+                        parseFloat(document.getElementById("p02").value),
+                    ],
+                    [
+                        parseFloat(document.getElementById("p10").value),
+                        parseFloat(document.getElementById("p11").value),
+                        parseFloat(document.getElementById("p12").value),
+                    ],
+                    [
+                        parseFloat(document.getElementById("p20").value),
+                        parseFloat(document.getElementById("p21").value),
+                        parseFloat(document.getElementById("p22").value),
+                    ],
+                ];
+                const days = parseInt(document.getElementById("days").value);
+
+                const res = await fetch("/simulate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ p, days }),
+                });
+
+                const data = await res.json();
+                const states = ["Clear", "Cloudy", "Overcast"];
+
+                let html = "";
+                for (let i = 0; i < 3; i++) {
+                    html += `<tr>
+                    <td class="border p-2 font-semibold">${states[i]}</td>
+                    <td class="border p-2">${data.empirical[i].toFixed(4)}</td>
+                    <td class="border p-2">${data.theoretical[i].toFixed(4)}</td>
+                </tr>`;
+                }
+                document.getElementById("resultBody").innerHTML = html;
+                document.getElementById("results").classList.remove("hidden");
+                document
+                    .getElementById("downloadBtn")
+                    .classList.remove("hidden");
+            }
+        </script>
+    </body>
+</html>

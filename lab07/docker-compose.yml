@@ -1,0 +1,6 @@
+services:
+  markov-app:
+    build: .
+    ports:
+      - "8080:8080"
+    container_name: markov_weather
