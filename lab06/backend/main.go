@@ -65,7 +65,6 @@ func discreteHandler(w http.ResponseWriter, r *http.Request) {
 	n := req.N
 	counts := make([]int, len(req.Probs))
 
-	// Simulation logic remains the same
 	for i := 0; i < n; i++ {
 		u := rand.Float64()
 		sum := 0.0
@@ -81,7 +80,7 @@ func discreteHandler(w http.ResponseWriter, r *http.Request) {
 	empFreqs := make([]float64, len(req.Probs))
 	var empMean, theorMean, empVar, theorVar float64
 
-	// Count how many outcomes are actually possible
+	// count how many outcomes are possible
 	activeBins := 0
 	for _, p := range req.Probs {
 		if p > 0 {
@@ -105,12 +104,13 @@ func discreteHandler(w http.ResponseWriter, r *http.Request) {
 	var chiSq float64
 	for i := range req.Probs {
 		expected := float64(n) * req.Probs[i]
-		if expected > 0 { // Skip bins where probability is 0
+		if expected > 0 {
+			// skip bins where probability is 0
 			chiSq += math.Pow(float64(counts[i])-expected, 2) / expected
 		}
 	}
 
-	// Safety check for Mean Error
+	// check for Mean Error
 	meanErr := 0.0
 	if theorMean != 0 {
 		meanErr = math.Abs(empMean-theorMean) / theorMean * 100
@@ -118,7 +118,7 @@ func discreteHandler(w http.ResponseWriter, r *http.Request) {
 		meanErr = math.Abs(empMean) * 100
 	}
 
-	// Safety check for Variance Error
+	// check for Variance Error
 	varErr := 0.0
 	if theorVar > 0 {
 		varErr = math.Abs(empVar-theorVar) / theorVar * 100
@@ -126,7 +126,7 @@ func discreteHandler(w http.ResponseWriter, r *http.Request) {
 		varErr = 100.0 // If theor is 0 but we somehow got variance
 	}
 
-	// Dynamic Degrees of Freedom
+	// DOF
 	df := activeBins - 1
 	passed := true
 	critVal := 0.0
@@ -135,8 +135,7 @@ func discreteHandler(w http.ResponseWriter, r *http.Request) {
 		critVal = getCriticalValue(df)
 		passed = chiSq <= critVal
 	} else {
-		// If only 1 bin is possible, ChiSq will always be 0.
-		// We define this as "passing" because the simulation matches the only possible outcome.
+		// if only 1 bin is possible, ChiSq will always be 0
 		critVal = 0
 		passed = (chiSq == 0)
 	}
