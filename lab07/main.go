@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 type SimulationRequest struct {
@@ -25,8 +24,6 @@ var stateNames = []string{"Clear", "Cloudy", "Overcast"}
 var latestHistory []int
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "index.html")
 	})
@@ -38,6 +35,29 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
+func validateTransitionMatrix(p [3][3]float64) string {
+	for i := 0; i < 3; i++ {
+		sum := 0.0
+		for j := 0; j < 3; j++ {
+			if p[i][j] < 0 || p[i][j] > 1 {
+				return fmt.Sprintf("Row %d, column %d: value %f must be between 0 and 1", i+1, j+1, p[i][j])
+			}
+			sum += p[i][j]
+		}
+		if sum < 0.999 || sum > 1.001 {
+			return fmt.Sprintf("Row %d probabilities sum to %f, must sum to 1.0", i+1, sum)
+		}
+	}
+	return ""
+}
+
+func validateDays(days int) string {
+	if days <= 0 {
+		return "Number of days must be positive"
+	}
+	return ""
+}
+
 func handleSimulate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
@@ -46,7 +66,16 @@ func handleSimulate(w http.ResponseWriter, r *http.Request) {
 
 	var req SimulationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Invalid JSON body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if errMsg := validateTransitionMatrix(req.P); errMsg != "" {
+		http.Error(w, errMsg, http.StatusBadRequest)
+		return
+	}
+	if errMsg := validateDays(req.Days); errMsg != "" {
+		http.Error(w, errMsg, http.StatusBadRequest)
 		return
 	}
 
@@ -79,7 +108,7 @@ func handleSimulate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	theoretical := solveStationary(req.P)
-	latestHistory = history // save for CSV export
+	latestHistory = history // save for csv export
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(SimulationResponse{
@@ -89,7 +118,7 @@ func handleSimulate(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// solves PI * P = PI, sum(PI) = 1 using Cramer's Rule
+// solves Pi * P = Pi, sum(Pi) = 1 using cramer's Rule
 func solveStationary(p [3][3]float64) []float64 {
 	a := [3][3]float64{
 		{p[0][0] - 1, p[1][0], p[2][0]},
@@ -115,9 +144,9 @@ func solveStationary(p [3][3]float64) []float64 {
 }
 
 func det3x3(m [3][3]float64) float64 {
-	return m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1]) -
-		m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0]) +
-		m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0])
+	return m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+		m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+		m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
 }
 
 func handleDownload(w http.ResponseWriter, r *http.Request) {
