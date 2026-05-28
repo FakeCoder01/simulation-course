@@ -1,0 +1,4 @@
+(executable
+ (name main)
+ (public_name lab08-backend)
+ (libraries dream yojson lwt))

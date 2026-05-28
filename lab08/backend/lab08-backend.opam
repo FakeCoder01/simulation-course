@@ -1,0 +1,12 @@
+opam-version: "2.0"
+name: "lab08-backend"
+synopsis: "Poisson process backend for lab08"
+depends: [
+  "dune" {>= "3.10"}
+  "dream"
+  "yojson"
+  "lwt"
+]
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+]
