@@ -1,0 +1,6 @@
+(lang dune 3.11)
+(name lab09)
+
+(package
+ (name lab09)
+ (depends dream))
